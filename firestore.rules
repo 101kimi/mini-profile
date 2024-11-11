@@ -1,0 +1,32 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /profiles/{docId} {
+      // Allow read for all users
+      allow read: if true;
+      
+      // Allow create if:
+      // 1. User is authenticated
+      // 2. The document ID matches the auth UID
+      // 3. Required fields are present
+      // 4. Email matches the authenticated user's email
+      allow create: if request.auth != null &&
+        docId == request.auth.uid &&
+        request.resource.data.keys().hasAll(['userId', 'name', 'bio', 'avatar', 'links', 'isEditing', 'email']) &&
+        request.resource.data.email == request.auth.token.email;
+      
+      // Allow update if:
+      // 1. User is authenticated
+      // 2. The document belongs to the user
+      // 3. Required fields are maintained
+      allow update: if request.auth != null &&
+        docId == request.auth.uid &&
+        request.resource.data.keys().hasAll(['userId', 'name', 'bio', 'avatar', 'links', 'isEditing', 'email']) &&
+        request.resource.data.email == resource.data.email;
+      
+      // Allow delete if the document belongs to the user
+      allow delete: if request.auth != null &&
+        docId == request.auth.uid;
+    }
+  }
+}
